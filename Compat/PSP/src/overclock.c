@@ -137,7 +137,7 @@ static inline void unlockMemory() {
 
 #define updatePLLControl()                          \
 {                                                   \
-  if (!(hw(0xbc100068) & pll_ratio_index)) {        \
+  if ((hw(0xbc100068) & 0x0f) != pll_ratio_index) { \
     hw(0xbc100068) = 0x80 | pll_ratio_index;        \
     /*hw(0xbc100068) &= 0xfffffff0;*/               \
     /*hw(0xbc100068) |= (0x80 | pll_ratio_index);*/ \
@@ -278,7 +278,7 @@ void doOverclock() {
     sceKernelResumeDispatchThread(state);
     sceKernelDelayThread(100);
   }
-  currFreq = theoreticalFreq;
+  currFreq = targetFreq;
 }
 
 void cancelOverclock() {
@@ -299,7 +299,7 @@ void cancelOverclock() {
   const float n = (float)((pllMul & 0xff00) >> 8);
   const float d = (float)((pllMul & 0x00ff));
   const float m = (d > 0.0f) ? (n / d) : 9.0f;
-  const int overclocked = ((pllCtl & pll_ratio_index) && (m > 9.0f)) ? 1 : 0;
+  const int overclocked = ((pllCtl == pll_ratio_index) && (m > 9.0f)) ? 1 : 0;
   sceKernelDelayThread(1000);
 
   //const u32 pllMul = hw(0xbc1000fc); sync();
@@ -322,16 +322,29 @@ void cancelOverclock() {
   }
 }
 
-void overclockHandler(int cpu, int bus){    
-    if (cpu > DEFAULT_FREQUENCY && cpu <= MAX_ALLOWED_FREQUENCY && cpu > currFreq) {
+void overclockHandler(int cpu, int bus){
+    const int customOverclock = cpu > DEFAULT_FREQUENCY && cpu <= MAX_ALLOWED_FREQUENCY;
+    if (customOverclock) {
+        // Leave an already active target unchanged.
+        if (currFreq == cpu && targetFreq == cpu) return;
         targetFreq = cpu;
+        if (currFreq > DEFAULT_FREQUENCY) {
+            // Normalize the current custom PLL before applying another target.
+            cancelOverclock();
+            currFreq = DEFAULT_FREQUENCY;
+        }
         doOverclock();
+        return;
     }
-    else {
-        if (currFreq > DEFAULT_FREQUENCY && cpu < currFreq) return;
-        origSetClockFrequency(cpu, bus);
-        currFreq = cpu;
+
+    // Clear the resume target before returning clock control to Sony.
+    targetFreq = cpu <= DEFAULT_FREQUENCY ? cpu : DEFAULT_FREQUENCY;
+    if (currFreq > DEFAULT_FREQUENCY) {
+        cancelOverclock();
+        currFreq = DEFAULT_FREQUENCY;
     }
+    origSetClockFrequency(cpu, bus);
+    currFreq = cpu <= DEFAULT_FREQUENCY ? cpu : origGetClockFrequency();
 }
 
 u32 getOverclockSpeed(){
