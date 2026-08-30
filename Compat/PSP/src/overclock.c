@@ -137,7 +137,7 @@ static inline void unlockMemory() {
 
 #define updatePLLControl()                          \
 {                                                   \
-  if ((hw(0xbc100068) & 0x0f) != pll_ratio_index) { \
+  if (!(hw(0xbc100068) & pll_ratio_index)) {        \
     hw(0xbc100068) = 0x80 | pll_ratio_index;        \
     /*hw(0xbc100068) &= 0xfffffff0;*/               \
     /*hw(0xbc100068) |= (0x80 | pll_ratio_index);*/ \
