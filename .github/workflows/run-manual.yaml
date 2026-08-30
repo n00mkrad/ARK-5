@@ -1,0 +1,49 @@
+name: ARK-5 Manual
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: pspdev/pspdev
+    steps:
+      - name: Dependencies
+        run: |
+          apk add clang build-base automake autoconf zlib-dev python3 zip curl unzip sudo
+
+      - name: Cloning and Building lastest pspsdk
+        run: | 
+          git clone https://github.com/pspdev/pspsdk
+
+      - name: Bootstrap sdk and build
+        working-directory: pspsdk
+        run: |
+          bash ./bootstrap
+          ./configure
+          make
+          make install
+
+      - name: Checkout
+        uses: actions/checkout@v4 
+        with:
+          submodules: recursive
+
+      - name: Update psp-cfw-sdk
+        run: curl -OJL "https://github.com/pspdev/psp-cfw-sdk/releases/download/latest/psp-cfw-sdk.zip"
+      
+      - name: Extract psp-cfw-sdk
+        run: sudo unzip -o psp-cfw-sdk.zip -d /
+
+      - name: Build
+        run:  make clean && make 
+
+      - name: Compress
+        run: |
+          cd dist
+          zip -r ../ARK-5.zip .
+      
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ark-release
+          path: ARK-5.zip
