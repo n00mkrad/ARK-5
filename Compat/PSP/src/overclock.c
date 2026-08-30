@@ -337,6 +337,9 @@ void overclockHandler(int cpu, int bus){
         return;
     }
 
+    // Preserve an active overclock to isolate cancellation during game startup.
+    if (!customOverclock && currFreq > DEFAULT_FREQUENCY) return;
+
     // Clear the resume target before returning clock control to Sony.
     targetFreq = cpu <= DEFAULT_FREQUENCY ? cpu : DEFAULT_FREQUENCY;
     if (currFreq > DEFAULT_FREQUENCY) {
