@@ -1,0 +1,63 @@
+# Psp 3006 crashes when launching any game with overclock above 333mhz
+
+**Repository:** PSP-Arkfive/ARK-5  
+**Issue:** #43  
+**Status:** Open  
+**Opened by:** [@PixelatedManThe2nd](https://github.com/PixelatedManThe2nd)  
+**Opened:** 2026-06-17  
+**Source:** https://github.com/PSP-Arkfive/ARK-5/issues/43
+
+---
+
+## @PixelatedManThe2nd — Issue
+
+This is my first time using this site ,so I apologize for any inconvenience. Also my english is slightly crooked, so I'll try explaining as good as I can. 
+
+Ever since I've moved from pro c to ark 5 I've had a problem with the overclock setting on my psp 03g ( the 3006 more specifically).
+
+Before installing ark 5 I made sure to format my SD entirely and also revert my firmware back to it's original using chronoswitch. 
+
+After that I went ahead and installed ark 5 and it went great.
+
+But there's a problem with the overclock setting; for example, every time I set the game clock over 333mhz (383 and above) and try launching a game ,the psp logo briefly appears only to be followed by a black screen for a couple of seconds after which it completely shuts down and restarts. This also goes for the custom launcher, it just refuses to load. instead it crashes. completely.
+
+This goes for the xmb as well. If I try to set the clock above 333mhz (383 and above) it simply goes to a black screen for some seconds only to crash and restart the console 
+
+I did actually use the experimental overclock tester that came with the fasterark folder,  and I can confirm that the console can go as far as 468mhz so I really don't understand why this happens.
+
+Also I don't have any plugins that could interfere with anything (cxmb being the only one active).
+
+...Although I did manage to find a "temporary fix":
+
+After using the experimental overclock tester, im able to  set the game clock AS WELL as the xmb clock to whatever frequency I previously couldn't use, and the games will run normally, but only for the current session! Once I turn off the console and turn it back on I have no choice but to use the experimental overclock tester AGAIN in order to overclock the console once more. And I have to do this EVERYTIME I turn on the psp.
+
+I'm not entirely sure if I messed up something during the installation or if this is intentional,  but I hope that maybe there's a fix for this (or an explanation at the very least).
+
+Cheers.
+
+---
+
+## @VirgoanSub — 2026-07-08
+
+
+I am having a similar problem for the games on my 09g(3001) down to the clock number, same for the custom launcher, but not for the XMB it works fine for me with the overclock, and i have not tried the experimental overclocker.
+
+---
+
+## @PixelatedManThe2nd — 2026-07-08
+
+
+> I am having a similar problem for the games on my 09g(3001) down to the clock number, same for the custom launcher, but not for the XMB it works fine for me with the overclock, and i have not tried the experimental overclocker.
+
+Well I haven't gotten an answer to my problems just yet ,but if I were to take a hot guess as to why this happens, then it would be due to the instability of the cfw back when it launched. 
+
+I firstly installed ark 5 not long after it was released to the public, and im starting to think that this may have been the reason behind this mess.
+
+Although the psp is perfectly fine. only downside being that I have no choice but to use the overclock tester for EACH TIME I wish to overclock both the game and/or vhs for each new session that I start. Once I turn off my psp I have no choice but to succumb to this annoying tactic....again....and again.... .
+
+Now they DID mention not to use it just yet (back when it released) , but since im a quite remarkable moron, I chose to ignore the warning regardless.
+
+All I can do now (...or we for that matter) is either wait for an answer or wait for further releases. If none of those help ,then I guess I would be better off buying a donor board.
+
+Sorry for the rather disappointing reply.
+
