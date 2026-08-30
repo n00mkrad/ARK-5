@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <pspsdk.h>
+#include <pspinit.h>
 #include <pspkernel.h>
 
 #include <cfwmacros.h>
@@ -23,6 +24,7 @@
 
 //#define PLL_CUSTOM_FLAG             27
 #define FREQUENCY_STEP                10  /*PLL_BASE_FREQ / 2*/
+#define DEFERRED_OVERCLOCK_DELAY      15000000
 
 static unsigned int pll_den           = PLL_DEN;
 static unsigned int pll_base_freq     = PLL_BASE_FREQ;
@@ -32,6 +34,8 @@ static unsigned int freq_step         = FREQUENCY_STEP;
 
 
 int currFreq = DEFAULT_FREQUENCY, targetFreq = DEFAULT_FREQUENCY;
+static volatile int deferredTargetFreq = DEFAULT_FREQUENCY;
+static volatile SceUID deferredThreadId = -1;
 
 void (*origSetClockFrequency)(int cpu, int bus) = NULL;
 u32 (*origGetClockFrequency)() = NULL;
@@ -42,6 +46,14 @@ u32 (*origGetClockFrequency)() = NULL;
 #define sync()          \
   __asm__ volatile(         \
     "sync       \n"     \
+  )
+
+// Clear CP0 tag registers before changing PLL multipliers.
+#define clearTags()       \
+  __asm__ volatile(       \
+    "mtc0 $0, $28   \n"   \
+    "mtc0 $0, $29   \n"   \
+    "sync           \n"   \
   )
 
 static inline void unlockMemory() {
@@ -257,7 +269,7 @@ void doOverclock() {
     state = sceKernelSuspendDispatchThread();
     suspendCpuIntr(intr);
     
-    // clearTags();
+    clearTags();
     
     u32 _num = (u32)(((float)(defaultFreq * pll_den)) / ((float)pll_base_freq));
     const u32 num = (u32)(((float)(theoreticalFreq * pll_den)) / ((float)pll_base_freq));
@@ -322,10 +334,45 @@ void cancelOverclock() {
   }
 }
 
+static int deferredOverclockWorker(SceSize args, void* argp) {
+  (void)args;
+  (void)argp;
+  // Let the game boot at the normal clock before applying the saved target.
+  sceKernelDelayThread(DEFERRED_OVERCLOCK_DELAY);
+  const int deferredTarget = deferredTargetFreq;
+  deferredThreadId = -1;
+  if (sceKernelInitKeyConfig() != PSP_INIT_KEYCONFIG_VSH && targetFreq == deferredTarget && deferredTarget > DEFAULT_FREQUENCY && currFreq <= DEFAULT_FREQUENCY) {
+    doOverclock();
+  }
+  sceKernelExitDeleteThread(0);
+  return 0;
+}
+
+static void scheduleDeferredOverclock(int cpu) {
+  // Reuse a pending worker while keeping its target current.
+  deferredTargetFreq = cpu;
+  if (deferredThreadId >= 0) return;
+  SceUID threadId = sceKernelCreateThread("DeferredOverclock", deferredOverclockWorker, 0x18, 0x1000, 0, NULL);
+  if (threadId < 0) return;
+  deferredThreadId = threadId;
+  if (sceKernelStartThread(threadId, 0, NULL) < 0) {
+    deferredThreadId = -1;
+    sceKernelDeleteThread(threadId);
+  }
+}
+
 void overclockHandler(int cpu, int bus){
     if (cpu > DEFAULT_FREQUENCY && cpu <= MAX_ALLOWED_FREQUENCY && cpu > currFreq) {
         targetFreq = cpu;
-        doOverclock();
+        if (sceKernelInitKeyConfig() != PSP_INIT_KEYCONFIG_VSH) {
+            // Keep game boot at the supported clock while the OC worker waits.
+            origSetClockFrequency(DEFAULT_FREQUENCY, DEFAULT_FREQUENCY/2);
+            currFreq = DEFAULT_FREQUENCY;
+            scheduleDeferredOverclock(cpu);
+        }
+        else {
+            doOverclock();
+        }
     }
     else {
         if (currFreq > DEFAULT_FREQUENCY && cpu < currFreq) return;
