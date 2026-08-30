@@ -44,6 +44,16 @@ u32 (*origGetClockFrequency)() = NULL;
     "sync       \n"     \
   )
 
+static inline void unlockMemory() {
+  // Unlock the undocumented hardware registers required by the overclock setup.
+  const u32 start = 0xbc000000;
+  const u32 end = 0xbc00002c;
+  for (u32 reg = start; reg <= end; reg += 4) {
+    hw(reg) = 0xFFFFFFFF;
+  }
+  sync();
+}
+
 #define delayPipeline()                    \
   __asm__ volatile(                            \
     "nop; nop; nop; nop; nop; nop; nop \n" \
@@ -333,6 +343,7 @@ void initOverclock() {
   // override clock set/get functions
   HIJACK_FUNCTION(K_EXTRACT_IMPORT(sctrlHENSetSpeed), overclockHandler, origSetClockFrequency);
   HIJACK_FUNCTION(K_EXTRACT_IMPORT(sctrlHENGetSpeed), getOverclockSpeed, origGetClockFrequency);
+  unlockMemory();
   adjustValues();
   sctrlFlushCache();
 }
